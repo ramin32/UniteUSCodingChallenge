@@ -1,38 +1,98 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import request from 'superagent';
+import superagent from 'superagent';
+import _ from 'lodash';
+import {TextField, SelectField, TextAreaField, CheckboxField} from './FormFields.js';
+
 
 class App extends React.Component {
   constructor (props) {
       super(props);
-      this.state = {serviceTypes: []};
+      this.state = {
+          serviceTypes: [],
+          request: {},
+          errors: {}
+      };
   }
   componentDidMount () {
-      this.typesRequest = request.get('/api/service-types')
+      this.typesAjaxRequest = superagent.get('/api/service-types')
           .end((err, res) => {
               if (err) {
                   toastr.error("Couldn't get service types!");
               }
               else {
+                  console.log(res.body.data);
                   this.setState({serviceTypes: res.body.data});
               }
           });
             
   }
   componentWillUnmount () {
-      this.typesRequest.abort();
+      if (this.typesAjaxRequest) this.typesAjaxRequest.abort();
+      if (this.assistanceAjaxRequest) this.assistanceAjaxRequest.abort();
   }
 
+  onSubmit (e) {
+      e.preventDefault();
+      var request = this.state.request || {};
+      var errors = {};
+      ["first_name", "last_name", "email", "service_type", "description", "accept"].forEach(function (field) {
+          if (!request[field]) {
+              errors[field] = "required";
+          }
+      });
+
+      this.setState({errors: errors});
+      if (_.isEmpty(errors)) {
+          var data = {
+              contact: _.pick(this.state.request, ['first_name', 'last_name', 'email'])
+          };
+          data = _.merge(data, _.pick(this.state.request, ['service_type', 'description', 'accept']));
+
+
+          this.assistanceAjaxRequest = superagent.post('/api/assistance-requests')
+                .send(data)
+                .end((err, res) => {
+                    if (err) {
+                        console.log(err);
+                        toastr.error(res.body.message);
+                    }
+                    else {
+                        toastr.success('Your request has been successfully submitted!');
+                        this.setState({request:{}, error: {}});
+                        $('#new-request-modal').modal('hide');
+
+                    }
+                });
+          
+      }
+      else {
+          toastr.warning('Please enter the required fields.');
+      }
+
+
+  }
+
+  updateRequest(e) {
+      var request = this.state.request || {};
+      if (e.target.type === "checkbox") {
+          console.log(e.target.checked);
+          request[e.target.name] = e.target.checked;
+      }
+      else {
+          request[e.target.name] = e.target.value;
+      }
+      this.setState({request: request});
+  }
 
   render () {
-      console.log(this.state.serviceTypes);
     return (
       <div className="jumbotron">
        
         <p>Assistant Requests</p>
-        <p><a className="btn btn-primary btn-lg" href="#" role="button" data-toggle="modal" data-target="#new-request-modal">New Request</a></p>
+        <p><a className="btn btn-primary btn-lg" data-toggle="modal" data-target="#new-request-modal">New Request</a></p>
 
-        <div className="modal fade" id="new-request-modal" tabIndex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <form className="modal fade" id="new-request-modal" onSubmit={(e) => this.onSubmit(e)} tabIndex="-1" role="dialog" aria-labelledby="myModalLabel">
           <div className="modal-dialog" role="document">
             <div className="modal-content">
               <div className="modal-header">
@@ -40,44 +100,44 @@ class App extends React.Component {
                 <h4 className="modal-title" id="myModalLabel">New Assistant Request</h4>
               </div>
               <div className="modal-body">
-                <div className="form-group">
-                    <label for="first_name">First Name</label>
-                    <input type="text" name="first_name" id="first_name" className="form-control" placeholder="First Name"/>
-                </div>
-                <div className="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input type="text" name="last_name" id="last_name" className="form-control" placeholder="Last Name"/>
-                </div>
-                <div className="form-group">
-                    <label for="email">Email</label>
-                    <input type="text" name="email" id="email" className="form-control" placeholder="Email"/>
-                </div>
-                <div className="form-group">
-                    <label for="service_type">Select Service Type</label>
-                    <select className="form-control" name="service_type">
-                        { this.state.serviceTypes.map(type => 
-                        <option value={type.id} key={type.id}>{type.display_name}</option>)}
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label for="description">Assistance request description</label>
-                    <textarea name="description" id="description" className="form-control" placeholder="Assistance request description"></textarea>
-                </div>
-                <div className="checkbox">
-                    <label>
-                      <input type="checkbox" name="accept"/> I hearby accept the terms of service for THE NETWORK and the Privacy Policy.
-                    </label>
-                </div>
-
-
+                <TextField name="first_name" 
+                           label="First Name" 
+                           onChange={this.updateRequest.bind(this)} 
+                           errors={this.state.errors}
+                            />
+                <TextField name="last_name" 
+                           label="Last Name" 
+                           onChange={this.updateRequest.bind(this)}
+                           errors={this.state.errors}
+                            />
+                <TextField name="email" 
+                           label="Email" 
+                           onChange={this.updateRequest.bind(this)}
+                           errors={this.state.errors}
+                            />
+                <SelectField name="service_type" 
+                             options={this.state.serviceTypes} 
+                             onChange={this.updateRequest.bind(this)} 
+                             errors={this.state.errors}
+                              />
+                <TextAreaField name="description" 
+                               label="Assistance request description" 
+                               onChange={this.updateRequest.bind(this)}
+                               errors={this.state.errors}
+                                />
+                <CheckboxField name="accept" 
+                               label="I hearby accept the terms of service for THE NETWORK and the Privacy Policy."
+                               onChange={this.updateRequest.bind(this)}
+                               errors={this.state.errors}
+                                />
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" className="btn btn-primary">Get Assistance</button>
+                <button type="submit" className="btn btn-primary">Get Assistance</button>
               </div>
             </div>
           </div>
-        </div>
+        </form>
 
     </div>
     );
