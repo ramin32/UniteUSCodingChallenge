@@ -32,6 +32,19 @@ class App extends React.Component {
       if (this.assistanceAjaxRequest) this.assistanceAjaxRequest.abort();
   }
 
+  requestExists(newRequest) {
+      var savedRequests = JSON.parse(window.localStorage.getItem('savedRequests') || '[]');
+      return savedRequests.reduce(function (found, oldRequest) {
+          return found || _.isEqual(newRequest, oldRequest);
+      }, false);
+  }
+
+  persistRequest(newRequest) {
+      var savedRequests = JSON.parse(window.localStorage.getItem('savedRequests') || '[]');
+      savedRequests.push(newRequest);
+      localStorage.setItem('savedRequests', JSON.stringify(savedRequests));
+  }
+
   onSubmit (e) {
       e.preventDefault();
       var request = this.state.request || {};
@@ -43,12 +56,17 @@ class App extends React.Component {
       });
 
       this.setState({errors: errors});
+
       if (_.isEmpty(errors)) {
+          if (this.requestExists(request)) {
+              toastr.warning('You already made that request');
+              return;
+          }
+          
           var data = {
               contact: _.pick(this.state.request, ['first_name', 'last_name', 'email'])
           };
           data = _.merge(data, _.pick(this.state.request, ['service_type', 'description', 'accept']));
-
 
           this.assistanceAjaxRequest = superagent.post('/api/assistance-requests')
                 .send(data)
@@ -61,7 +79,7 @@ class App extends React.Component {
                         toastr.success('Your request has been successfully submitted!');
                         this.setState({request:{}, error: {}});
                         $('#new-request-modal').modal('hide');
-
+                        this.persistRequest(request);
                     }
                 });
           
@@ -80,7 +98,7 @@ class App extends React.Component {
           request[e.target.name] = e.target.checked;
       }
       else {
-          request[e.target.name] = e.target.value;
+          request[e.target.name] = _.trim(e.target.value);
       }
       this.setState({request: request});
   }
@@ -104,31 +122,37 @@ class App extends React.Component {
                            label="First Name" 
                            onChange={this.updateRequest.bind(this)} 
                            errors={this.state.errors}
+                           data={this.state.request}
                             />
                 <TextField name="last_name" 
                            label="Last Name" 
                            onChange={this.updateRequest.bind(this)}
                            errors={this.state.errors}
+                           data={this.state.request}
                             />
                 <TextField name="email" 
                            label="Email" 
                            onChange={this.updateRequest.bind(this)}
                            errors={this.state.errors}
+                           data={this.state.request}
                             />
                 <SelectField name="service_type" 
                              options={this.state.serviceTypes} 
                              onChange={this.updateRequest.bind(this)} 
                              errors={this.state.errors}
+                             data={this.state.request}
                               />
                 <TextAreaField name="description" 
                                label="Assistance request description" 
                                onChange={this.updateRequest.bind(this)}
                                errors={this.state.errors}
+                               data={this.state.request}
                                 />
                 <CheckboxField name="accept" 
                                label="I hearby accept the terms of service for THE NETWORK and the Privacy Policy."
                                onChange={this.updateRequest.bind(this)}
                                errors={this.state.errors}
+                               data={this.state.request}
                                 />
               </div>
               <div className="modal-footer">
