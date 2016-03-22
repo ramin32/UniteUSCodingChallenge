@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build-js": "nodemon --watch static/js/src --exec 'browserifyinc -d -t [ babelify --presets [ react babel-preset-es2015 ] ] static/js/src/AssistantRequests.js -o static/js/all.js -v'",
+    "build-js": "nodemon --watch static/js/src --exec 'browserifyinc --cachefile tmp/browserify-cache.json -d -t [ babelify --presets [ react babel-preset-es2015 ] ] static/js/src/App.js -o static/js/all.js -v'",
     "run-server": "nodemon app.js --ignore static",
-    "start": "concurrently 'npm run build-js' 'npm run run-server'"
+    "start": "concurrently 'npm run build-js' 'npm run run-server'",
+    "test": "mocha --compilers js:babel-core/register"
   },
   "author": "",
   "license": "ISC",
@@ -17,11 +18,15 @@
     "body-parser": "^1.15.0",
     "browserify": "^13.0.0",
     "browserify-incremental": "^3.1.0",
+    "chai": "^3.5.0",
     "concurrently": "^2.0.0",
     "express": "^4.13.4",
+    "jsdom": "^8.1.0",
     "lodash": "^4.6.1",
+    "mocha": "^2.4.5",
     "nodemon": "^1.9.1",
     "react": "^0.14.7",
+    "react-addons-test-utils": "^0.14.7",
     "react-dom": "^0.14.7",
     "superagent": "^1.8.1"
   }

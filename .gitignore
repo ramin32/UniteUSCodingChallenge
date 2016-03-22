@@ -1,3 +1,4 @@
 node_modules
 browserify-cache.json
+browserify-test-cache.json
 static/js/all.js

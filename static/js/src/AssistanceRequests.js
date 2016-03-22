@@ -1,11 +1,11 @@
+'use strict';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import superagent from 'superagent';
 import _ from 'lodash';
 import {TextField, SelectField, TextAreaField, CheckboxField} from './FormFields.js';
 
-
-class App extends React.Component {
+export default class AssistanceRequests extends React.Component {
   constructor (props) {
       super(props);
       this.state = {
@@ -18,10 +18,9 @@ class App extends React.Component {
       this.typesAjaxRequest = superagent.get('/api/service-types')
           .end((err, res) => {
               if (err) {
-                  toastr.error("Couldn't get service types!");
+                  alert("Couldn't get service types!");
               }
               else {
-                  console.log(res.body.data);
                   this.setState({serviceTypes: res.body.data});
               }
           });
@@ -59,7 +58,7 @@ class App extends React.Component {
 
       if (_.isEmpty(errors)) {
           if (this.requestExists(request)) {
-              toastr.warning('You already made that request');
+              alert('You already made that request');
               return;
           }
           
@@ -72,11 +71,10 @@ class App extends React.Component {
                 .send(data)
                 .end((err, res) => {
                     if (err) {
-                        console.log(err);
-                        toastr.error(res.body.message);
+                        alert(res.body.message);
                     }
                     else {
-                        toastr.success('Your request has been successfully submitted!');
+                        alert('Your request has been successfully submitted!');
                         this.setState({request:{}, error: {}});
                         $('#new-request-modal').modal('hide');
                         this.persistRequest(request);
@@ -85,7 +83,7 @@ class App extends React.Component {
           
       }
       else {
-          toastr.warning('Please enter the required fields.');
+          alert('Please enter the required fields.');
       }
 
 
@@ -94,7 +92,6 @@ class App extends React.Component {
   updateRequest(e) {
       var request = this.state.request || {};
       if (e.target.type === "checkbox") {
-          console.log(e.target.checked);
           request[e.target.name] = e.target.checked;
       }
       else {
@@ -157,7 +154,7 @@ class App extends React.Component {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="submit" className="btn btn-primary">Get Assistance</button>
+                <button type="submit" className="btn btn-primary get-assistance-button">Get Assistance</button>
               </div>
             </div>
           </div>
@@ -167,7 +164,4 @@ class App extends React.Component {
     );
   }
 }
-ReactDOM.render(
-  <App />,
-  document.getElementById('react-root')
-);
+

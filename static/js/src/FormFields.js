@@ -1,10 +1,12 @@
+'use strict';
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 
 
 const Error = ({errors, name}) => {
     if (errors && errors[name]) {
-        return <div className="text-danger pull-right">{errors[name]}</div>;
+        return <div className="text-danger pull-right error-message">{errors[name]}</div>;
     }
 
     return <span/>;
