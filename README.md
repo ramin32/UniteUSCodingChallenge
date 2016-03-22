@@ -10,3 +10,22 @@ $ npm start
 ```
 
 Point your browser to http://localhost:5000
+
+Testing
+--------
+To test run the server in one terminal:
+```
+$ npm start
+```
+
+Open a new terminal and run:
+```
+$ npm test
+```
+
+Project Files
+-------------
+React Code: /static/js/src
+Mock Node API: /app.js
+Test Cases: /test
+

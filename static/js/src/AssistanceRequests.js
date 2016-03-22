@@ -11,17 +11,25 @@ export default class AssistanceRequests extends React.Component {
       this.state = {
           serviceTypes: [],
           request: {},
-          errors: {}
+          errors: {},
+          previousSubmissionPassed: null
       };
+
+      this.ajaxCompletedCallback = function () {};
+  }
+
+  setAjaxCompletedCallback(fn) {
+      this.ajaxCompletedCallback = fn;
   }
   componentDidMount () {
-      this.typesAjaxRequest = superagent.get('/api/service-types')
+      this.typesAjaxRequest = superagent.get('http://localhost:5000/api/service-types')
           .end((err, res) => {
               if (err) {
-                  alert("Couldn't get service types!");
+                  toastr.error("Couldn't get service types!");
+                  this.ajaxCompletedCallback();
               }
               else {
-                  this.setState({serviceTypes: res.body.data});
+                  this.setState({serviceTypes: res.body.data}, this.ajaxCompletedCallback);
               }
           });
             
@@ -44,6 +52,14 @@ export default class AssistanceRequests extends React.Component {
       localStorage.setItem('savedRequests', JSON.stringify(savedRequests));
   }
 
+  previousSubmissionPassed () {
+      return this.state.previousSubmissionPassed;
+  }
+
+  getPreviousErrorMessage() { 
+      return this.previousErrorMessage || "";
+  }
+
   onSubmit (e) {
       e.preventDefault();
       var request = this.state.request || {};
@@ -58,7 +74,8 @@ export default class AssistanceRequests extends React.Component {
 
       if (_.isEmpty(errors)) {
           if (this.requestExists(request)) {
-              alert('You already made that request');
+              toastr.warning('You already made that request');
+              this.previousErrorMessage = 'You already made that request';
               return;
           }
           
@@ -67,23 +84,25 @@ export default class AssistanceRequests extends React.Component {
           };
           data = _.merge(data, _.pick(this.state.request, ['service_type', 'description', 'accept']));
 
-          this.assistanceAjaxRequest = superagent.post('/api/assistance-requests')
+          this.assistanceAjaxRequest = superagent.post('http://localhost:5000/api/assistance-requests')
                 .send(data)
                 .end((err, res) => {
                     if (err) {
-                        alert(res.body.message);
+                        toastr.error(res.body.message);
+                        this.setState({previousSubmissionPassed: false}, this.ajaxCompletedCallback);
                     }
                     else {
-                        alert('Your request has been successfully submitted!');
-                        this.setState({request:{}, error: {}});
+                        toastr.success('Your request has been successfully submitted!');
+                        this.setState({request:{}, error: {}, previousSubmissionPassed: true}, this.ajaxCompletedCallback);
                         $('#new-request-modal').modal('hide');
                         this.persistRequest(request);
                     }
+                    this.ajaxCompletedCallback();
                 });
           
       }
       else {
-          alert('Please enter the required fields.');
+          toastr.warning('Please enter the required fields.');
       }
 
 
@@ -105,7 +124,7 @@ export default class AssistanceRequests extends React.Component {
       <div className="jumbotron">
        
         <p>Assistant Requests</p>
-        <p><a className="btn btn-primary btn-lg" data-toggle="modal" data-target="#new-request-modal">New Request</a></p>
+        <p><a className="btn btn-primary btn-lg new-request-button" data-toggle="modal" data-target="#new-request-modal">New Request</a></p>
 
         <form className="modal fade" id="new-request-modal" onSubmit={(e) => this.onSubmit(e)} tabIndex="-1" role="dialog" aria-labelledby="myModalLabel">
           <div className="modal-dialog" role="document">
@@ -154,7 +173,7 @@ export default class AssistanceRequests extends React.Component {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="submit" className="btn btn-primary get-assistance-button">Get Assistance</button>
+                <button type="submit" className="btn btn-primary">Get Assistance</button>
               </div>
             </div>
           </div>

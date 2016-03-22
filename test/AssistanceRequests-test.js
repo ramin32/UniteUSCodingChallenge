@@ -27,9 +27,7 @@ describe('AssistanceRequests', function () {
     chai.expect(errorFields.length).to.equal(2);
   });
 
-  it('normal submit', function () {
-    var requestComponent = TestUtils.renderIntoDocument(<AssistanceRequests />);
-    var requestForm = TestUtils.findRenderedDOMComponentWithTag(requestComponent, 'form');
+  function populateAllFields(requestComponent) {
     var inputFields = TestUtils.scryRenderedDOMComponentsWithTag(requestComponent, 'input');
     inputFields.forEach(function (f) {
         if (f.type == "checkbox") {
@@ -46,10 +44,36 @@ describe('AssistanceRequests', function () {
     var descriptionField = TestUtils.findRenderedDOMComponentWithTag(requestComponent, 'textarea');
     TestUtils.Simulate.change(descriptionField, {target: {name: descriptionField.name, value: 'some description...'}});
 
+  }
+
+  it('normal submit', function () {
+    var requestComponent = TestUtils.renderIntoDocument(<AssistanceRequests />);
+    var requestForm = TestUtils.findRenderedDOMComponentWithTag(requestComponent, 'form');
+    populateAllFields(requestComponent);
     TestUtils.Simulate.submit(requestForm);
     var errorFields = TestUtils.scryRenderedDOMComponentsWithClass(requestComponent, 'error-message');
     chai.expect(errorFields.length).to.equal(0);
   });
 
+  it('check unique submits', function (done) {
+    this.timeout(15000);
+    var requestComponent = TestUtils.renderIntoDocument(<AssistanceRequests />);
+    var requestForm = TestUtils.findRenderedDOMComponentWithTag(requestComponent, 'form');
+    populateAllFields(requestComponent);
 
+
+    requestComponent.setAjaxCompletedCallback(function () {
+        TestUtils.Simulate.submit(requestForm);
+        if (requestComponent.previousSubmissionPassed()) {
+            requestComponent.setAjaxCompletedCallback(function () {
+                done();
+                requestComponent.setAjaxCompletedCallback(function (){});
+                chai.expect(requestComponent.getPreviousErrorMessage()).to.equal('You already made that request');
+            });
+            TestUtils.Simulate.submit(requestForm);
+        }
+    });
+
+    TestUtils.Simulate.submit(requestForm);
+  });
 });

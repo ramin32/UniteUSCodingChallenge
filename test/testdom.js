@@ -26,3 +26,7 @@ function propagateToGlobal (window) {
   }
 }
 
+global.jQuery = global.$ = require('jquery');
+require('../lib/bootstrap.min.js');
+global.toastr = require('../lib/toastr.min.js');
+
