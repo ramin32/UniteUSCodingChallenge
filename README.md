@@ -25,7 +25,8 @@ $ npm test
 
 Project Files
 -------------
+```
 React Code: /static/js/src
 Mock Node API: /app.js
 Test Cases: /test
-
+```
